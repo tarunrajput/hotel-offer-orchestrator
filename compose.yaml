@@ -1,0 +1,86 @@
+x-app-environment: &app-environment
+  PORT: "3000"
+  TEMPORAL_ADDRESS: temporal:7233
+  TEMPORAL_NAMESPACE: default
+  TEMPORAL_TASK_QUEUE: hotel-offers
+  REDIS_URL: redis://redis:6379
+  SUPPLIER_A_URL: ${SUPPLIER_A_URL:-http://mock-suppliers:3000/supplierA/hotels}
+  SUPPLIER_B_URL: ${SUPPLIER_B_URL:-http://mock-suppliers:3000/supplierB/hotels}
+  SNAPSHOT_TTL_SECONDS: ${SNAPSHOT_TTL_SECONDS:-300}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  api:
+    image: hotel-offer-orchestrator:local
+    restart: unless-stopped
+    build: .
+    init: true
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+    environment:
+      <<: *app-environment
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/livez').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    stop_grace_period: 15s
+
+  worker:
+    image: hotel-offer-orchestrator:local
+    restart: unless-stopped
+    pull_policy: never
+    command: ["node", "dist/worker/main.js"]
+    init: true
+    environment: *app-environment
+    depends_on:
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    stop_grace_period: 15s
+
+  mock-suppliers:
+    image: hotel-offer-orchestrator:local
+    pull_policy: never
+    command: ["node", "dist/mock-suppliers/main.js"]
+    init: true
+    ports:
+      - "127.0.0.1:${MOCK_SUPPLIERS_PORT:-3001}:3000"
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MOCK_SUPPLIER_A_DOWN: ${MOCK_SUPPLIER_A_DOWN:-false}
+      MOCK_SUPPLIER_B_DOWN: ${MOCK_SUPPLIER_B_DOWN:-false}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/livez').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    stop_grace_period: 15s
+
+  redis:
+    image: redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    tmpfs: /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  temporal:
+    image: temporalio/temporal:1.10.1@sha256:b228dadf9cdb6c7c02a1394b89dd76f827aac9760e458fce42f0899a10141225
+    command: ["server", "start-dev", "--ip", "0.0.0.0"]
+    ports:
+      - "127.0.0.1:${TEMPORAL_UI_PORT:-8233}:8233"
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

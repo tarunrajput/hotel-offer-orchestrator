@@ -1,0 +1,204 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "categories": {
+    "correctness": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "dist/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ],
+      "rules": {
+        "constructor-super": "error",
+        "for-direction": "error",
+        "getter-return": "error",
+        "no-async-promise-executor": "error",
+        "no-case-declarations": "error",
+        "no-class-assign": "error",
+        "no-compare-neg-zero": "error",
+        "no-cond-assign": "error",
+        "no-const-assign": "error",
+        "no-constant-binary-expression": "error",
+        "no-constant-condition": "error",
+        "no-control-regex": "error",
+        "no-debugger": "error",
+        "no-delete-var": "error",
+        "no-dupe-class-members": "error",
+        "no-dupe-else-if": "error",
+        "no-dupe-keys": "error",
+        "no-duplicate-case": "error",
+        "no-empty": "error",
+        "no-empty-character-class": "error",
+        "no-empty-pattern": "error",
+        "no-empty-static-block": "error",
+        "no-ex-assign": "error",
+        "no-extra-boolean-cast": "error",
+        "no-fallthrough": "error",
+        "no-func-assign": "error",
+        "no-global-assign": "error",
+        "no-import-assign": "error",
+        "no-invalid-regexp": "error",
+        "no-irregular-whitespace": "error",
+        "no-loss-of-precision": "error",
+        "no-misleading-character-class": "error",
+        "no-new-native-nonconstructor": "error",
+        "no-nonoctal-decimal-escape": "error",
+        "no-obj-calls": "error",
+        "no-prototype-builtins": "error",
+        "no-redeclare": "error",
+        "no-regex-spaces": "error",
+        "no-self-assign": "error",
+        "no-setter-return": "error",
+        "no-shadow-restricted-names": "error",
+        "no-sparse-arrays": "error",
+        "no-this-before-super": "error",
+        "no-unassigned-vars": "error",
+        "no-unexpected-multiline": "error",
+        "no-unreachable": "error",
+        "no-unsafe-finally": "error",
+        "no-unsafe-negation": "error",
+        "no-unsafe-optional-chaining": "error",
+        "no-unused-labels": "error",
+        "no-unused-private-class-members": "error",
+        "no-unused-vars": "error",
+        "no-useless-assignment": "error",
+        "no-useless-backreference": "error",
+        "no-useless-catch": "error",
+        "no-useless-escape": "error",
+        "no-with": "error",
+        "preserve-caught-error": "error",
+        "require-yield": "error",
+        "use-isnan": "error",
+        "valid-typeof": "error",
+        "no-array-constructor": "error",
+        "no-unused-expressions": "error",
+        "typescript/ban-ts-comment": "error",
+        "typescript/no-duplicate-enum-values": "error",
+        "typescript/no-empty-object-type": "error",
+        "typescript/no-explicit-any": "error",
+        "typescript/no-extra-non-null-assertion": "error",
+        "typescript/no-misused-new": "error",
+        "typescript/no-namespace": "error",
+        "typescript/no-non-null-asserted-optional-chain": "error",
+        "typescript/no-require-imports": "error",
+        "typescript/no-this-alias": "error",
+        "typescript/no-unnecessary-type-constraint": "error",
+        "typescript/no-unsafe-declaration-merging": "error",
+        "typescript/no-unsafe-function-type": "error",
+        "typescript/no-wrapper-object-types": "error",
+        "typescript/prefer-as-const": "error",
+        "typescript/prefer-namespace-keyword": "error",
+        "typescript/triple-slash-reference": "error"
+      },
+      "plugins": [
+        "typescript"
+      ]
+    },
+    {
+      "files": [
+        "src/modules/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "(?:^|/)(?:main|bootstrap|app|instrumentation)(?:\\.[^/]+)?$|(?:^|/)(?:worker|mock-suppliers)(?:/|$)",
+                "message": "Application entry points compose feature modules. Import a feature contract here."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/suppliers/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "(?:^|/)(?:main|bootstrap|app|instrumentation)(?:\\.[^/]+)?$|(?:^|/)(?:worker|mock-suppliers|hotel-search)(?:/|$)",
+                "message": "Suppliers expose their own contract and are independent of hotel search."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/hotel-search/hotel-search.service.ts",
+        "src/modules/hotel-search/interfaces/**/*.ts",
+        "src/modules/hotel-search/utils/**/*.ts",
+        "src/modules/hotel-search/exceptions/**/*.ts",
+        "src/modules/suppliers/supplier.types.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "(?:^|/)(?:common|config|worker|mock-suppliers|repositories|temporal|dto)(?:/|$)|(?:^|/)(?:main|bootstrap|app|instrumentation)(?:\\.[^/]+)?$|\\.(?:controller|client|factory)$|^(?:node:|@(?:opentelemetry|temporalio)/|(?:express|pino|redis)(?:/|$))",
+                "message": "Keep business rules and interfaces independent of the runtime. Use a contract for side effects."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/common/**/*.ts",
+        "src/config/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^\\..*(?:/(?:modules|worker|mock-suppliers)(?:/|$)|/(?:main|bootstrap|app|instrumentation)(?:\\.[^/]+)?$)",
+                "message": "Shared infrastructure is independent of feature modules and application entry points."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/worker/workflows.ts",
+        "src/modules/*/temporal/workflow.ts",
+        "src/common/temporal/workflow-interceptors.ts",
+        "src/common/temporal/trace-header.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^(?:node:|@opentelemetry/|@temporalio/(?:activity|client|worker)(?:/|$)|(?:express|pino|redis)(?:/|$))|(?:^|/)(?:bootstrap|activities|workflow-runner|trace-interceptors|pino-logger|main|http|redis|observability|instrumentation)(?:/|$)|\\.(?:controller|client|factory|middleware)$|(?:^|/)(?:repositories|config)(?:/|$)",
+                "message": "Workflow code must be replay-safe. Execute I/O inside Activities."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

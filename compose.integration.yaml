@@ -1,0 +1,7 @@
+services:
+  redis:
+    ports:
+      - "127.0.0.1:${TEST_REDIS_PORT:-16379}:6379"
+  temporal:
+    ports:
+      - "127.0.0.1:${TEST_TEMPORAL_PORT:-17233}:7233"

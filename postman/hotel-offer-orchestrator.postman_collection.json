@@ -1,0 +1,201 @@
+{
+  "info": {
+    "name": "Hotel Offer Orchestrator",
+    "description": "Run Default stack with both mock suppliers up. Run Supplier B outage after recreating the mock-suppliers service with MOCK_SUPPLIER_B_DOWN=true.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Default stack",
+      "item": [
+        {
+          "name": "Delhi overlap",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/hotels?city=delhi"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Returns each hotel once with the cheapest offer and its original commission\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get(\"Hotel-Offer-Completeness\")).to.equal(\"complete\");",
+                  "  pm.expect(pm.response.json()).to.deep.equal([{\"name\":\"Holtin\",\"price\":5340,\"supplier\":\"Supplier B\",\"commissionPct\":20},{\"name\":\"Radison\",\"price\":5900,\"supplier\":\"Supplier A\",\"commissionPct\":13}]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown city",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/hotels?city=helsinki"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Returns a complete empty list\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get(\"Hotel-Offer-Completeness\")).to.equal(\"complete\");",
+                  "  pm.expect(pm.response.json()).to.deep.equal([]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inclusive price range",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/hotels?city=delhi&minPrice=5340&maxPrice=5900"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Includes both endpoint prices\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get(\"Hotel-Offer-Completeness\")).to.equal(\"complete\");",
+                  "  pm.expect(pm.response.json()).to.deep.equal([{\"name\":\"Holtin\",\"price\":5340,\"supplier\":\"Supplier B\",\"commissionPct\":20},{\"name\":\"Radison\",\"price\":5900,\"supplier\":\"Supplier A\",\"commissionPct\":13}]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dedupe before filtering",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/hotels?city=delhi&minPrice=5800&maxPrice=6000"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Excludes Holtin when its winning price is below the range\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get(\"Hotel-Offer-Completeness\")).to.equal(\"complete\");",
+                  "  pm.expect(pm.response.json()).to.deep.equal([{\"name\":\"Radison\",\"price\":5900,\"supplier\":\"Supplier A\",\"commissionPct\":13}]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reversed range",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/hotels?city=delhi&minPrice=6000&maxPrice=5000"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Reports invalid price bounds as a Problem Details response\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json().type).to.equal('urn:hotel-offer-orchestrator:problem:invalid-query');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Supplier health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Reports both suppliers healthy\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.deep.equal({\"status\":\"up\",\"suppliers\":{\"supplier-a\":\"up\",\"supplier-b\":\"up\"}});",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Supplier B outage",
+      "item": [
+        {
+          "name": "Partial Delhi offers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/hotels?city=delhi"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Marks the results as partial and returns the surviving supplier's offers\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get(\"Hotel-Offer-Completeness\")).to.equal(\"partial\");",
+                  "  pm.expect(pm.response.headers.get(\"Hotel-Offer-Failed-Supplier\")).to.equal(\"supplier-b\");",
+                  "  pm.expect(pm.response.json()).to.deep.equal([{\"name\":\"Radison\",\"price\":5900,\"supplier\":\"Supplier A\",\"commissionPct\":13},{\"name\":\"Holtin\",\"price\":6000,\"supplier\":\"Supplier A\",\"commissionPct\":10}]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Degraded supplier health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Reports Supplier B down while Supplier A is still healthy\", function () {",
+                  "  pm.response.to.have.status(503);",
+                  "  pm.expect(pm.response.json()).to.deep.equal({\"status\":\"degraded\",\"suppliers\":{\"supplier-a\":\"up\",\"supplier-b\":\"down\"}});",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

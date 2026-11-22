@@ -1,0 +1,51 @@
+{
+  "name": "hotel-offer-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "^26.13.1",
+    "npm": "^12.2.3"
+  },
+  "packageManager": "npm@12.2.3",
+  "scripts": {
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings src tests",
+    "lint:fix": "npm run lint -- --fix",
+    "format:check": "oxfmt --check src tests",
+    "format:fix": "oxfmt --write src tests",
+    "test": "node --import tsx --test tests/unit/*.test.ts",
+    "test:integration": "npm run build && node --import tsx --test tests/integration/*.test.ts",
+    "test:observability": "node --import tsx --test tests/observability/*.test.ts",
+    "start": "node dist/main.js",
+    "start:worker": "node dist/worker/main.js"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "1.10.0",
+    "@opentelemetry/core": "3.1.1",
+    "@opentelemetry/instrumentation-pino": "0.71.0",
+    "@opentelemetry/instrumentation-runtime-node": "0.38.0",
+    "@opentelemetry/resources": "3.1.1",
+    "@opentelemetry/sdk-node": "0.301.2",
+    "@temporalio/activity": "1.26.0",
+    "@temporalio/client": "1.26.0",
+    "@temporalio/common": "1.26.0",
+    "@temporalio/worker": "1.26.0",
+    "@temporalio/workflow": "1.26.0",
+    "cors": "2.8.6",
+    "express": "5.3.0",
+    "helmet": "8.3.0",
+    "pino": "10.4.0",
+    "redis": "6.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "26.6.6",
+    "oxfmt": "0.79.0",
+    "oxlint": "1.94.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

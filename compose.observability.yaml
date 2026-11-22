@@ -1,0 +1,43 @@
+x-otel-environment: &otel-environment
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_EXPORTER_OTLP_TIMEOUT: "3000"
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: otlp
+  OTEL_LOGS_EXPORTER: otlp
+  OTEL_TRACES_SAMPLER: parentbased_always_on
+  OTEL_METRIC_EXPORT_INTERVAL: "5000"
+  OTEL_METRIC_EXPORT_TIMEOUT: "3000"
+
+services:
+  api:
+    environment: *otel-environment
+    stop_grace_period: 20s
+
+  worker:
+    environment:
+      <<: *otel-environment
+      TEMPORAL_METRICS_OTLP_ENDPOINT: http://otel-collector:4318/v1/metrics
+
+  mock-suppliers:
+    environment: *otel-environment
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0@sha256:e40d61f10c9a617cca1ffd1be4d7e2b3a4b0f0001798ff07e58cabe82e618cea
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0@sha256:3823829974ccfc2485d2e48b165579091f32295022ae80ca49704e2f4834116e
+    ports:
+      - "127.0.0.1:${JAEGER_PORT:-16686}:16686"
+
+  prometheus:
+    image: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=1d"]
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    tmpfs: /prometheus:uid=65534,gid=65534
